@@ -1,0 +1,122 @@
+---
+title: "hw5"
+author: "Senna"
+date: "2024-11-05"
+output: html_document
+---
+
+
+```{r}
+library(tidyverse)
+```
+
+### Problem 1
+
+Suppose you put n people in a room, and want to know the probability that at least two people share a birthday. For simplicity, we’ll assume there are no leap years (i.e. there are only 365 days) and that birthdays are uniformly distributed over the year (which is actually not the case).
+
+Write a function that, for a fixed group size, randomly draws “birthdays” for each person; checks whether there are duplicate birthdays in the group; and returns TRUE or FALSE based on the result.
+
+Next, run this function 10000 times for each group size between 2 and 50. For each group size, compute the probability that at least two people in the group will share a birthday by averaging across the 10000 simulation runs. Make a plot showing the probability as a function of group size, and comment on your results
+
+```{r}
+
+set.seed(1)
+
+has_duplicate_birthday = function(n) {
+  birthdays = sample(1:365, n, replace = TRUE)
+  return(length(birthdays) != length(unique(birthdays)))
+} #FALSE means there are no duplicate. TRUE means there are duplicate. 
+
+
+group_sizes = 2:50  
+num_it = 10000
+
+p = numeric(length(group_sizes))
+
+for (i in seq_along(group_sizes)) {
+  n = group_sizes[i]
+  
+  sim_results = replicate(num_it, has_duplicate_birthday(n))
+  p[i] = mean(sim_results)
+}
+
+
+
+ggplot(results_df, aes(x = group_sizes, y = p)) +
+  geom_line(color = "blue") +
+  geom_point(color = "red") +
+  labs(title = "Probability of Shared Birthday vs. Group Size",
+       x = "Group Size",
+       y = "Probability of Shared Birthday") +
+  theme_minimal()
+
+```
+
+### Problem 2
+
+When designing an experiment or analysis, a common question is whether it is likely that a true effect will be detected – put differently, whether a false null hypothesis will be rejected. The probability that a false null hypothesis is rejected is referred to as power, and it depends on several factors, including: the sample size; the effect size; and the error variance. In this problem, you will conduct a simulation to explore power in a one-sample t-test.
+
+First set the following design elements:
+Fix n=30
+Fix σ=5
+Set μ=0
+Generate 5000 datasets from the model x∼Normal[μ,σ]
+
+```{r}
+n = 30
+sigma = 5
+mu = 0
+num_datasets = 5000
+
+set.seed(123)  
+datasets <- vector("list", num_datasets) 
+
+for (i in 1:num_datasets) {
+  datasets[[i]] <- rnorm(n, mean = mu, sd = sigma) 
+}
+```
+
+For each dataset, save μ^ and the p-value arising from a test of H:μ=0 using α=0.05. Hint: to obtain the estimate and p-value, use broom::tidy to clean the output of t.test.
+```{r}
+alpha = 0.05
+
+estimates = numeric(num_datasets)
+p_values = numeric(num_datasets)
+
+for (i in 1:num_datasets){
+  t_results = broom::tidy(t.test(datasets[[i]], mu = 0))
+  estimates[i] = t_results $ estimate
+  p_values[i] = t_results $ p.value
+  
+}
+```
+
+Repeat the above for μ={1,2,3,4,5,6}, and complete the following:
+
+Make a plot showing the proportion of times the null was rejected (the power of the test) on the y axis and the true value of μ
+ on the x axis. Describe the association between effect size and power.
+Make a plot showing the average estimate of μ^
+ on the y axis and the true value of μ
+ on the x axis. Make a second plot (or overlay on the first) the average estimate of μ^
+ only in samples for which the null was rejected on the y axis and the true value of μ
+ on the x axis. Is the sample average of μ^
+ across tests for which the null is rejected approximately equal to the true value of μ
+? Why or why not?
+```{r}
+
+```
+
+
+1. power vs true mean
+The first plot shows the relationship between the true mean and the power of the test. As the effect size (the distance of 
+𝜇
+μ from 0) increases, the power of the test also increases. This makes sense, as larger effect sizes are easier to detect with greater statistical power.
+```{r}
+
+```
+
+2. average estmate of mu hat vs true mean (mu)
+```{r}
+
+```
+
