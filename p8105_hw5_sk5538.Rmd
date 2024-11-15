@@ -80,43 +80,162 @@ For each dataset, save μ^ and the p-value arising from a test of H:μ=0 using �
 ```{r}
 alpha = 0.05
 
-estimates = numeric(num_datasets)
-p_values = numeric(num_datasets)
+results <- data.frame(mu_h = numeric(num_datasets), p_value = numeric(num_datasets))
 
-for (i in 1:num_datasets){
-  t_results = broom::tidy(t.test(datasets[[i]], mu = 0))
-  estimates[i] = t_results $ estimate
-  p_values[i] = t_results $ p.value
+
+for (i in 1:num_datasets) {
+  datasets[[i]] <- rnorm(n, mean = mu, sd = sigma)
+  t_result <- broom::tidy(t.test(datasets[[i]], mu = 0))
   
+  results$mu_h[i] <- t_result$estimate
+  results$p_value[i] <- t_result$p.value
 }
+
+head(results)
 ```
 
 Repeat the above for μ={1,2,3,4,5,6}, and complete the following:
 
 Make a plot showing the proportion of times the null was rejected (the power of the test) on the y axis and the true value of μ
  on the x axis. Describe the association between effect size and power.
-Make a plot showing the average estimate of μ^
- on the y axis and the true value of μ
- on the x axis. Make a second plot (or overlay on the first) the average estimate of μ^
+ 
+```{r}
+mus = 1:6
+
+
+set.seed(123)
+
+power_results = data.frame(mu = mus, power = numeric(length(mus)))
+
+for (i in seq_along(mu_values)) {
+  mu = mus[i]
+  reject_null = 0
+  
+  for (j in 1:num_datasets) {
+    dataset = rnorm(n, mean = mu, sd = sigma)
+    
+    t_result = broom::tidy(t.test(dataset, mu = 0))
+    p_value = t_result$p.value
+    
+    if (p_value < 0.05) {
+      reject_null = reject_null + 1
+    }
+  }
+  
+  power_results$power[i] <- reject_null / num_datasets
+}
+
+
+```
+
+```{r}
+ggplot(power_results, aes(x = mu, y = power)) +
+  geom_line(color = "blue") +
+  geom_point(color = "blue") +
+  labs(
+    title = "power vs μ",
+    x = "μ",
+    y = "power"
+  ) +
+  theme_minimal()
+```
+
+
+Make a plot showing the average estimate of μ^ on the y axis and the true value of μ on the x axis. Make a second plot (or overlay on the first) the average estimate of μ^
  only in samples for which the null was rejected on the y axis and the true value of μ
  on the x axis. Is the sample average of μ^
  across tests for which the null is rejected approximately equal to the true value of μ
 ? Why or why not?
 ```{r}
+estimate_results = data.frame(
+  mu = mus,
+  avg_all = numeric(length(mus)),
+  avg_rejected = numeric(length(mus))
+)
+
+
+
+for (j in seq_along(mus)) {
+  mu = mus[j]
+  muh_all = numeric(num_datasets)
+  muh_rejected = numeric(0)  # Only store mu_hat when null is rejected
+  
+  for (i in 1:num_datasets) {
+    dataset = rnorm(n, mean = mu, sd = sigma)
+    t_result = broom::tidy(t.test(dataset, mu = 0))
+    muh = t_result$estimate
+    p_value = t_result$p.value
+    
+    # Store the sample mean
+    muh_all[i] = muh
+    
+    # If the null hypothesis is rejected, store mu_hat in the rejected set
+    if (p_value < 0.05) {
+      muh_rejected = c(muh_rejected, muh)
+    }
+  }
+  
+  # Calculate average mu_hat for all samples and for rejected samples only
+  estimate_results$avg_all[j] = mean(muh_all)
+  estimate_results$avg_rejected[j] = mean(muh_rejected, na.rm = TRUE)
+}
 
 ```
 
-
-1. power vs true mean
-The first plot shows the relationship between the true mean and the power of the test. As the effect size (the distance of 
-𝜇
-μ from 0) increases, the power of the test also increases. This makes sense, as larger effect sizes are easier to detect with greater statistical power.
 ```{r}
-
+ggplot(estimate_results, aes(x = mu)) +
+  geom_line(aes(y = avg_all, color = "Average μ^ (all samples)")) +
+  geom_point(aes(y = avg_all, color = "Average μ^ (all samples)")) +
+  geom_line(aes(y = avg_rejected, color = "Average μ^ (rejected only)")) +
+  geom_point(aes(y = avg_rejected, color = "Average μ^ (rejected only)")) +
+  labs(
+    title = "Average Sample Estimate of μ^",
+    x = "True Value of μ",
+    y = "Average Estimate of μ^"
+  ) +
+  scale_color_manual(values = c("blue", "red"), name = "Estimates") +
+  theme_minimal()
 ```
 
-2. average estmate of mu hat vs true mean (mu)
+
+
+
+### Problem 3
+
+Describe the raw data. Create a city_state variable (e.g. “Baltimore, MD”) and then summarize within cities to obtain the total number of homicides and the number of unsolved homicides (those for which the disposition is “Closed without arrest” or “Open/No arrest”).
+
 ```{r}
+homicide_df = read_csv("./homicide-data.csv")|>
+  mutate(city_state = paste (city, state, sep = ","))
 
+by_citystate = homicide_df|>
+  group_by(city_state)|>
+  summarise(
+    total_hom = n(),
+    unsolved_hom = sum(disposition == "Closed without arrest") | (disposition == "Open/No arrest")
+  )
 ```
+For the city of Baltimore, MD, use the prop.test function to estimate the proportion of homicides that are unsolved; save the output of prop.test as an R object, apply the broom::tidy to this object and pull the estimated proportion and confidence intervals from the resulting tidy dataframe.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
